@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FROSTLINE — Arctic Team Deathmatch</title>
+<link rel="stylesheet" href="/style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "/vendor/three/build/three.module.js",
+  "three/addons/": "/vendor/three/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="errbox" hidden></div>
+
+<!-- loading -->
+<div id="loading" class="screen">
+  <div class="logo">FROST<span>LINE</span></div>
+  <div class="bar"><div id="loadbar"></div></div>
+  <div id="loadtext">Loading map…</div>
+</div>
+
+<!-- menu -->
+<div id="menu" class="screen" hidden>
+  <div class="panel">
+    <div class="logo">FROST<span>LINE</span></div>
+    <div class="tag">ARCTIC TEAM DEATHMATCH · FROST vs EMBER · FIRST TO <b id="limitTxt">40</b></div>
+
+    <label>Callsign
+      <input id="name" maxlength="16" placeholder="Your name" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Room <small>(friends with the same room name play together)</small>
+      <input id="room" maxlength="24" placeholder="main" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Graphics
+      <select id="quality"><option value="low">Low (weak laptops)</option><option value="med">Medium</option><option value="high">High</option></select>
+    </label>
+    <div class="row">
+      <label class="grow">Mouse sensitivity <input id="sens" type="range" min="0.3" max="3" step="0.05" value="1"></label>
+      <label class="grow">Volume <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+    </div>
+
+    <button id="joinBtn" class="primary">DEPLOY</button>
+    <button id="copyLink" class="ghost">Copy invite link</button>
+    <div id="menuMsg"></div>
+
+    <div class="keys">
+      <span><kbd>W A S D</kbd> move</span>
+      <span><kbd>Shift</kbd> sprint</span>
+      <span><kbd>C</kbd> crouch</span>
+      <span><kbd>Space</kbd> jump</span>
+      <span><kbd>LMB</kbd> fire</span>
+      <span><kbd>RMB</kbd> aim</span>
+      <span><kbd>R</kbd> reload</span>
+      <span><kbd>Q</kbd> <kbd>E</kbd> lean</span>
+      <span><kbd>Tab</kbd> scoreboard</span>
+      <span><kbd>M</kbd> full map</span>
+    </div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" hidden>
+  <div id="vignette"></div>
+  <div id="dmgdirs"></div>
+
+  <div id="scorebar">
+    <div class="team a"><span id="nameA">FROST</span><b id="scoreA">0</b></div>
+    <div class="vs">/ <span id="limitHud">40</span> /</div>
+    <div class="team b"><b id="scoreB">0</b><span id="nameB">EMBER</span></div>
+  </div>
+
+  <canvas id="minimap" width="160" height="160"></canvas>
+  <div id="ping"></div>
+  <div id="killfeed"></div>
+  <div id="notify"></div>
+
+  <div id="crosshair"><i></i><i></i><i></i><i></i><u></u></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+
+  <div id="bottomLeft">
+    <div id="hpNum">100</div>
+    <div class="hpbar"><div id="hpFill"></div></div>
+    <div id="teamTag"></div>
+  </div>
+  <div id="bottomRight">
+    <div id="ammo"><b id="ammoMag">30</b><span>/ ∞</span></div>
+    <div id="reloadTxt"></div>
+  </div>
+
+  <div id="dead" hidden>
+    <div id="deadTitle">ELIMINATED</div>
+    <div id="deadBy"></div>
+    <div id="deadTimer"></div>
+  </div>
+
+  <div id="bigmap" hidden>
+    <canvas id="bigmapCanvas" width="720" height="720"></canvas>
+    <div class="cap">FROSTLINE VILLAGE &nbsp;·&nbsp; press <kbd>M</kbd> to close</div>
+  </div>
+
+  <div id="scoreboard" hidden>
+    <h2>SCOREBOARD</h2>
+    <div class="cols"><div id="sbA"></div><div id="sbB"></div></div>
+  </div>
+
+  <div id="pause" hidden>
+    <div class="panel small">
+      <h2>PAUSED</h2>
+      <p>Click to return to the fight.</p>
+    </div>
+  </div>
+
+  <div id="endscreen" hidden>
+    <div id="endTitle"></div>
+    <div id="endSub"></div>
+    <div class="cols"><div id="endA"></div><div id="endB"></div></div>
+    <div id="endTimer"></div>
+  </div>
+</div>
+
+<div id="fps" hidden></div>
+
+<script>
+(function () {
+  var b = document.getElementById('errbox');
+  function s(m) { b.hidden = false; b.textContent += m + '\n'; }
+  window.__showErr = s;
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target !== window && (e.target.src || e.target.href)) s('Failed to load ' + (e.target.src || e.target.href));
+    else s((e.message || 'error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) { s('Promise: ' + ((e.reason && e.reason.message) || e.reason)); });
+})();
+</script>
+<script type="module" src="/js/game.js"></script>
+</body>
+</html>

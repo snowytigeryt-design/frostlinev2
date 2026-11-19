@@ -1,0 +1,17 @@
+{
+  "name": "frostline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FROSTLINE - multiplayer arctic team deathmatch in the browser (three.js + WebSockets)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "three": "0.170.0",
+    "ws": "^8.18.0"
+  }
+}
