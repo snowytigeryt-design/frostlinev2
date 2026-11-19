@@ -54,6 +54,16 @@ forest belt around the edge. FROST deploys from the south, EMBER from the north.
 `public/js/layout.js`, so everyone gets the same map. See `ROADMAP.md` for the plan against the GDD.
 Menu -> Graphics (Low/Medium/High) controls view distance, shadows and resolution. Use Low on weak laptops.
 
+## Bot Horde mode and tanks (Part 1.5)
+- Menu -> Mode -> **Bot Horde**: everyone is on one team and fights endless waves of bots (wave n = 6+3n bots, tougher each wave).
+  Share the link with `&mode=horde` (Copy invite link does this for you). The mode is set by the first player to create the room.
+- Bot AI is a port of your tactical shooter AI module (`ai.js`): patrol / stalk-flank / ambush / overwatch / take-cover states,
+  vision cone + line of sight, memory, reaction time, cover scoring, squad blackboard with 3-way pinch. It runs on the server.
+- **Tanks** (both modes): walk up and press **F** to drive. WASD drives, mouse aims the turret, LMB fires the cannon (2.4 s reload),
+  F exits. Shells have splash damage, tanks can be destroyed (rifles do little, cannons and bots chip away), crush people, wreck
+  and respawn after 45 s.
+- Extra env vars: `TANK_RELOAD_MS`, `TANK_RESPAWN_MS`, `WAVE_BREAK_MS`.
+
 ## Tuning
 - Server settings can be changed with environment variables in the Render dashboard:
   `SCORE_LIMIT` (40), `RESPAWN_MS` (4000), `PROTECT_MS` (2500), `OVER_MS` (12000).
@@ -73,7 +83,8 @@ Menu -> Graphics (Low/Medium/High) controls view distance, shadows and resolutio
 
 ## Files
 ```
-server.js            HTTP + WebSocket server, game rules
+server.js            HTTP + WebSocket server, game rules, horde waves, tanks
+ai.js                bot AI (FSM + squad coordinator)
 public/index.html    page, HUD markup
 public/style.css     HUD styling
 public/js/game.js    renderer, map loading, player, weapons, netcode, HUD

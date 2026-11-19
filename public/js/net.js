@@ -8,9 +8,9 @@ export class Net {
     this._pingTimer = null;
   }
 
-  connect(room, name) {
+  connect(room, name, mode) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = (this.ws = new WebSocket(`${proto}://${location.host}/ws?room=${encodeURIComponent(room)}`));
+    const ws = (this.ws = new WebSocket(`${proto}://${location.host}/ws?room=${encodeURIComponent(room)}&mode=${mode === 'horde' ? 'horde' : 'tdm'}`));
     ws.onopen = () => {
       this.open = true;
       this.send({ t: 'join', name });

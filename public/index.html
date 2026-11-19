@@ -36,6 +36,9 @@
     <label>Room <small>(friends with the same room name play together)</small>
       <input id="room" maxlength="24" placeholder="main" autocomplete="off" spellcheck="false">
     </label>
+    <label>Mode
+      <select id="mode"><option value="tdm">Team Deathmatch (FROST vs EMBER)</option><option value="horde">Bot Horde (co-op waves)</option></select>
+    </label>
     <label>Graphics
       <select id="quality"><option value="low">Low (weak laptops)</option><option value="med">Medium</option><option value="high">High</option></select>
     </label>
@@ -57,6 +60,7 @@
       <span><kbd>RMB</kbd> aim</span>
       <span><kbd>R</kbd> reload</span>
       <span><kbd>Q</kbd> <kbd>E</kbd> lean</span>
+      <span><kbd>F</kbd> enter / exit tank</span>
       <span><kbd>Tab</kbd> scoreboard</span>
       <span><kbd>M</kbd> full map</span>
     </div>
@@ -79,6 +83,13 @@
   <div id="killfeed"></div>
   <div id="notify"></div>
 
+  <div id="wave" hidden></div>
+  <div id="prompt" hidden></div>
+  <div id="tankHud" hidden>
+    <div class="tk"><span>ARMOUR</span><div class="bar"><i id="tkHp"></i></div></div>
+    <div class="tk"><span>CANNON</span><div class="bar"><i id="tkRl"></i></div></div>
+    <small>WASD drive &middot; mouse aims turret &middot; LMB fire &middot; F exit</small>
+  </div>
   <div id="crosshair"><i></i><i></i><i></i><i></i><u></u></div>
   <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
 

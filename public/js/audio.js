@@ -139,6 +139,50 @@ export class Sfx {
     this._tone(out, t, 0.2, 170, 40, 1.1);                           // thump
   }
 
+  cannon(pos) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const out = this._route(pos, true, pos ? 2.0 : 1.4);
+    this._noise(out, t, 0.12, 'highpass', 900, 900, 1.0);
+    this._noise(out, t, 0.6, 'lowpass', 3200, 140, 1.2);
+    this._noise(out, t + 0.02, 1.2, 'lowpass', 500, 60, 0.7);
+    this._tone(out, t, 0.5, 90, 28, 1.8);
+  }
+
+  boom(pos, big) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + (pos ? Math.min(1.2, this._dist(pos) / 340) : 0); // sound lags the flash
+    const out = this._route(pos, true, big ? 2.6 : 2.0);
+    this._noise(out, t, 0.2, 'highpass', 600, 600, 0.9);
+    this._noise(out, t, 0.9, 'lowpass', 2200, 90, 1.4);
+    this._noise(out, t + 0.05, 1.8, 'lowpass', 420, 45, 0.8);
+    this._tone(out, t, 0.8, 70, 22, 2.0);
+  }
+
+  /** Engine drone for the tank you are driving. level 0..1 = how hard it is working. */
+  engine(on, level) {
+    if (!this.ctx) return;
+    const c = this.ctx;
+    if (on && !this._eng) {
+      const o1 = c.createOscillator(), o2 = c.createOscillator();
+      o1.type = 'sawtooth'; o2.type = 'square';
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 240;
+      const g = c.createGain(); g.gain.value = 0;
+      o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.master);
+      o1.start(); o2.start();
+      this._eng = { o1, o2, lp, g };
+    }
+    const e = this._eng;
+    if (!e) return;
+    const t = c.currentTime;
+    const l = on ? Math.max(0, Math.min(1, level || 0)) : 0;
+    e.o1.frequency.setTargetAtTime(34 + l * 30, t, 0.15);
+    e.o2.frequency.setTargetAtTime(17 + l * 15, t, 0.15);
+    e.lp.frequency.setTargetAtTime(180 + l * 260, t, 0.2);
+    e.g.gain.setTargetAtTime(on ? 0.22 + l * 0.16 : 0, t, 0.2);
+    if (!on && e.g.gain.value < 0.002) { e.o1.stop(); e.o2.stop(); this._eng = null; }
+  }
+
   footstep(pos, vol) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
