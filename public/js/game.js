@@ -593,6 +593,7 @@ const me = {
   yaw: 0, pitch: 0, recP: 0, recY: 0, bloom: 0,
   crouchT: 0, adsT: 0, sprintT: 0, adsHeld: false, firing: false, sprinting: false,
   mag: CFG.mag, reloading: false, reloadStart: 0, nextShot: 0, lastEmpty: 0, lastFire: 0,
+  slideT: 0, slideCd: 0, slideX: 0, slideZ: 0, landDip: 0, lastGround: 0, jumpBuf: 0, jumped: false, spaceWas: false, cWas: false,
   lean: 0, speedH: 0, bobT: 0, stepAcc: 0, eye: CFG.eye, hurtFlash: 0, swayX: 0, swayY: 0, kick: 0,
 };
 const keys = {};
@@ -1256,7 +1257,7 @@ function updateLocal(dt, now) {
   const strIn = input ? (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) : 0;
   const leanIn = input ? (keys.KeyE ? 1 : 0) - (keys.KeyQ ? 1 : 0) : 0;
   me.lean = damp(me.lean, leanIn, 11, dt);
-  me.sprinting = input && !!keys.ShiftLeft && fwdIn > 0 && !crouched && !me.firing && !me.adsHeld && leanIn === 0;
+  me.sprinting = input && !!keys.ShiftLeft && me.slideT <= 0 && fwdIn > 0 && !crouched && !me.firing && !me.adsHeld && leanIn === 0;
 
   const sy = Math.sin(me.yaw), cy = Math.cos(me.yaw);
   let wx = -sy * fwdIn + cy * strIn, wz = -cy * fwdIn - sy * strIn;
@@ -1265,11 +1266,34 @@ function updateLocal(dt, now) {
   let speed = crouched ? CFG.crouch : me.sprinting ? CFG.sprint : CFG.walk;
   speed *= lerp(1, 0.66, me.adsT);
   if (me.reloading) speed *= 0.92;
-  const k = 1 - Math.exp(-(me.onGround ? 13 : 2.2) * dt);
-  me.vel.x += (wx * speed - me.vel.x) * k;
-  me.vel.z += (wz * speed - me.vel.z) * k;
+  if (me.slideT <= 0) {
+    // ground: snappy accel, slightly slower to stop; air: keep momentum but steer
+    const wantMove = wx !== 0 || wz !== 0;
+    const k = 1 - Math.exp(-(me.onGround ? (wantMove ? 14 : 10) : 3.2) * dt);
+    me.vel.x += (wx * speed - me.vel.x) * k;
+    me.vel.z += (wz * speed - me.vel.z) * k;
+  }
 
-  if (input && keys.Space && me.onGround && !crouched) { me.vy = CFG.jump; me.onGround = false; }
+  // --- movement feel: slide, coyote time, jump buffer, air control, landing dip ---
+  const nowT = performance.now();
+  if (me.onGround) me.lastGround = nowT;
+  const spaceEdge = input && keys.Space && !me.spaceWas; me.spaceWas = !!keys.Space;
+  if (spaceEdge) me.jumpBuf = nowT;
+  const cEdge = input && keys.KeyC && !me.cWas; me.cWas = !!keys.KeyC;
+  if (cEdge && me.sprinting && me.onGround && me.slideT <= 0 && nowT > me.slideCd) {
+    me.slideT = 0.85; me.slideCd = nowT + 1400; me.slideX = wx; me.slideZ = wz; me.vel.x = wx * 9.6; me.vel.z = wz * 9.6;
+  }
+  if (me.slideT > 0) {
+    me.slideT -= dt;
+    const sp = lerp(2.6, 9.6, clamp(me.slideT / 0.85, 0, 1));
+    me.vel.x = damp(me.vel.x, me.slideX * sp, 8, dt); me.vel.z = damp(me.vel.z, me.slideZ * sp, 8, dt);
+    if (!me.onGround || (input && spaceEdge)) me.slideT = 0;
+    me.crouchT = Math.max(me.crouchT, 0.95);
+  }
+  if (input && me.jumpBuf && nowT - me.jumpBuf < 130 && nowT - me.lastGround < 110 && !me.jumped) {
+    me.vy = CFG.jump; me.onGround = false; me.jumpBuf = 0; me.jumped = true; me.slideT = 0;
+  }
+  if (me.onGround) me.jumped = false;
 
   const n = Math.max(1, Math.ceil(dt / 0.01)), h = dt / n;
   for (let i = 0; i < n; i++) {
@@ -1277,7 +1301,10 @@ function updateLocal(dt, now) {
     me.vy -= CFG.gravity * h;
     me.pos.y += me.vy * h;
     const fh = floorHeight(me.pos, World.boxes);
-    if (me.vy <= 0 && me.pos.y <= fh) { me.pos.y = fh; me.vy = 0; me.onGround = true; } else me.onGround = false;
+    if (me.vy <= 0 && me.pos.y <= fh) {
+      if (!me.onGround && me.vy < -5) { me.landDip = Math.min(0.14, -me.vy * 0.011); sfx.footstep(null, 0.5); }
+      me.pos.y = fh; me.vy = 0; me.onGround = true;
+    } else me.onGround = false;
   }
   me.speedH = Math.hypot(me.vel.x, me.vel.z);
 
@@ -1302,7 +1329,8 @@ function updateLocal(dt, now) {
   }
 
   if (me.reloading && now - me.reloadStart >= CFG.reloadTime * 1000) { me.reloading = false; me.mag = CFG.mag; }
-  me.eye = lerp(CFG.eye, CFG.eyeCrouch, me.crouchT);
+  me.landDip = damp(me.landDip, 0, 9, dt);
+  me.eye = lerp(CFG.eye, CFG.eyeCrouch, me.crouchT) - me.landDip;
 }
 
 function updateFire(now) {
@@ -1354,7 +1382,7 @@ function updateCamera(dt, now) {
     const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
     const roll = -strafe * 0.012 * (1 - me.adsT) - me.lean * LEAN_ROLL;
     camera.rotation.set(me.pitch + me.recP, me.yaw + me.recY, roll);
-    const fov = lerp(75, 52, me.adsT);
+    const fov = lerp(75 + me.sprintT * 7 + (me.slideT > 0 ? 5 : 0), 52, me.adsT);
     if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   } else if (me.dead) {
     // death cam: collapse to the ground and look toward the killer
@@ -1389,7 +1417,7 @@ function updateCamera(dt, now) {
 }
 
 const VM_HIP = new THREE.Vector3(0.15, -0.34, -0.30);
-const VM_ADS = new THREE.Vector3(0.0, -0.2965, -0.24);
+const VM_ADS = new THREE.Vector3(0.0, -0.372, -0.27);
 function updateViewmodel(dt, now) {
   if (!vmRifle) return;
   const vm = vmRifle.holder;
@@ -1414,6 +1442,9 @@ function updateViewmodel(dt, now) {
   vmRifle.pivot.position.copy(vm.position);
   vmRifle.pivot.rotation.copy(vm.rotation);
 
+  // while aiming, the gun fades so you can see through the sights
+  const gop = lerp(1, 0.28, clamp(a * 1.4, 0, 1));
+  if (vmRifle.op !== gop) { vmRifle.op = gop; for (const m of vmRifle.mats) { m.transparent = gop < 0.99; m.opacity = gop; m.depthWrite = gop > 0.9; } }
   vmFlashT = Math.max(0, vmFlashT - dt);
   const f = vmRifle.flash;
   f.material.opacity = vmFlashT > 0 ? 1 : 0;
@@ -1433,7 +1464,9 @@ function buildViewmodel() {
   r.gun.add(light);
   r.holder.position.set(0, 0, 0);
   r.holder.rotation.set(0, Math.PI, 0);
-  vmRifle = { holder: pivot, pivot, flash: r.flash, light };
+  const mats = [];
+  r.gun.traverse((o) => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); mats.push(...[].concat(o.material)); } });
+  vmRifle = { holder: pivot, pivot, flash: r.flash, light, mats };
   // updateViewmodel positions `holder` (alias of pivot) — keep both in sync
   vmRifle.holder = pivot;
 }

@@ -116,7 +116,7 @@ class TacticalBot {
     this.hp = c.hp; this.maxHp = c.hp;
     this.ammo = 30; this.maxAmmo = 30; this.maxSpeed = c.speed || 4.2;
     this.traits = { aggression: c.aggression ?? 0.6, accuracy: c.accuracy ?? 0.6, reactionTime: c.reaction ?? 0.45 };
-    this.vision = c.vision || 75; this.fov = Math.PI * 0.72;
+    this.vision = c.vision || 46; this.fov = Math.PI * 0.62; this.fireRange = c.fireRange || 38;
     const r = Math.random;
     this.genome = { coverPreference: 0.3 + r() * 0.4, flankAggression: 0.4 + r() * 0.5, triggerDiscipline: r(), squadCohesion: 0.3 + r() * 0.5 };
     this.state = 'PATROL_SWEEP'; this.stateTimer = 0;
@@ -181,6 +181,7 @@ class TacticalBot {
       const trapNotSprung = this.squad && this.squad.phase === 'SETTING_TRAP' && !this.squad.ambushTriggered;
       const d = Math.hypot(this.target.x - this.x, this.target.y - this.y);
       if (isAmbush && trapNotSprung && d > 24 - this.genome.triggerDiscipline * 12 && this.hp > this.maxHp * 0.65) this.holdingFire = true;
+      if (d > this.fireRange) this.holdingFire = true;
       if (!this.holdingFire && this.reactionTimer >= this.traits.reactionTime && this.ammo > 0 && this.reload <= 0 && Math.abs(norm(raw - this.aim)) < 0.16) fire = true;
     } else if (this.lastKnown) {
       desired = Math.atan2(this.lastKnown.y - this.y, this.lastKnown.x - this.x) + Math.sin(this.sweep) * 0.22;

@@ -628,7 +628,8 @@ function botAI(room, dt, now) {
       const tg = res.target;
       const d = Math.hypot(tg.x - ai.x, tg.y - ai.y);
       const wv = Math.min(14, 7 + 0.35 * room.wave.n);
-      const chance = Math.max(0.06, (1 - d / 75)) * (0.35 + ai.traits.accuracy * 0.6);
+      if (d > 40) continue;
+      const chance = Math.max(0.05, (1 - d / 45)) * (0.3 + ai.traits.accuracy * 0.5);
       const ok = Math.random() < chance;
       const ty = tg.kind === 'p' ? tg.ref.y + 1.3 : W.G + 1.5;
       const dx = tg.x - ai.x, dy = ty - (W.G + 1.5), dz = tg.y - ai.y, l = Math.hypot(dx, dy, dz) || 1;

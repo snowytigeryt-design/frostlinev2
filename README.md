@@ -15,6 +15,7 @@ Roblox character as the player model, the winter assault rifle as the weapon) co
 | R | reload |
 | M | full map |
 | Q / E | lean left / right (peek around cover) |
+| C while sprinting | slide |
 | Tab | scoreboard |
 
 ## Run it on your computer
